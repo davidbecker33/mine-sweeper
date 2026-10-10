@@ -1,9 +1,8 @@
-import "babel-polyfill";
 import React from 'react';
 import { render } from 'react-dom';
 import { Provider } from 'react-redux';
-import { applyMiddleware, compose, createStore } from 'redux';
-import { HashRouter as Router, Route, history } from 'react-router-dom';
+import { createStore } from 'redux';
+import { HashRouter as Router, Route } from 'react-router-dom';
 import App from './components/app';
 import { generateNewBoardBlocks } from './components/util/board-utils';
 import gameReducer from './components/reducer/reducer';

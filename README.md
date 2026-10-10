@@ -12,12 +12,21 @@ __Table of content__
 
 **node.js**:
 
-Once downloaded run the following commands to install and start the application.  The application will open webpack-dev-server and listen on port 8080.  This can be changed to meet your needs.
+Requires Node.js 20.19+ (an `.nvmrc` pinning Node 22 is included — run `nvm use` if you have nvm installed).
+
+Once downloaded run the following commands to install and start the application. This starts the Vite dev server on port 5173 by default.
 
 ```bash
 npm install
 
 npm start
+```
+
+Other available scripts:
+
+```bash
+npm run build    # production build, output in dist/
+npm run preview  # serve the production build locally
 ```
 
 

@@ -3,7 +3,7 @@ import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { gameActions } from '../action/actions';
-import { Navbar, Nav, NavItem, NavDropdown, NavbarHeader, NavbarBrand, MenuItem } from 'react-bootstrap';
+import { Navbar, Nav, NavDropdown, MenuItem } from 'react-bootstrap';
 
 function mapStateToProps(store) {
   return {};
