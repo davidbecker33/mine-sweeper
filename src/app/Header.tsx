@@ -2,7 +2,7 @@ import React from 'react';
 import { bindActionCreators, type Dispatch } from 'redux';
 import { connect, type ConnectedProps } from 'react-redux';
 import { gameActions } from '../games/minesweeper/actions';
-import { classNames } from '../engine/class-names';
+import { cn } from '../engine/cn';
 
 function mapDispatchToProps(dispatch: Dispatch) {
   return { actions: bindActionCreators(gameActions, dispatch) };
@@ -46,7 +46,7 @@ class Header extends React.Component<HeaderProps, HeaderState> {
               <a className="navbar-brand" href="#">MineSweeper</a>
             </div>
             <ul className="nav navbar-nav">
-              <li className={classNames({ dropdown: true, open: this.state.dropdownOpen })}>
+              <li className={cn({ dropdown: true, open: this.state.dropdownOpen })}>
                 <a className="dropdown-toggle" href="#" role="button" onClick={this.toggleDropdown.bind(this)}>
                   Game <span className="caret"></span>
                 </a>

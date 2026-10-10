@@ -3,7 +3,7 @@ import { bindActionCreators, type Dispatch } from 'redux';
 import { connect, type ConnectedProps } from 'react-redux';
 import { gameActions } from '../actions';
 import Block from './Block';
-import { classNames } from '../../../engine/class-names';
+import { cn } from '../../../engine/cn';
 import type { Cell, GameState } from '../types';
 
 function mapStateToProps(store: GameState) {
@@ -115,12 +115,12 @@ class GameBoard extends React.Component<GameBoardProps, GameBoardState> {
                   <h4 className="modal-title">MineSweeper</h4>
                 </div>
                 <div className="modal-body">
-                  <div className={classNames({ hidden: this.props.gameState !== 'success' })}>
+                  <div className={cn({ hidden: this.props.gameState !== 'success' })}>
                     <h4>Congratulations!!!</h4>
                     <p>You successfully avoided all mines.</p>
                     <p><a href="#" onClick={this.playAgain.bind(this)} >Play again?</a></p>
                   </div>
-                  <div className={classNames({ hidden: this.props.gameState !== 'failed' })}>
+                  <div className={cn({ hidden: this.props.gameState !== 'failed' })}>
                     <h4>Oooops!!</h4>
                     <p>You accidentally clicked on a mine.</p>
                     <p><a href="#" onClick={this.playAgain.bind(this)} >Play again?</a></p>
