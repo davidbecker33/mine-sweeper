@@ -6,9 +6,9 @@ export default function App() {
     <div className="flex min-h-dvh flex-col">
       <Header />
 
-      <div className="flex flex-1 items-center justify-center p-6">
+      <main className="flex flex-1 items-center justify-center p-6">
         <Minesweeper />
-      </div>
+      </main>
     </div>
   );
 }
