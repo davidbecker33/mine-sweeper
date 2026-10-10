@@ -2,18 +2,17 @@ import { GameActionType, type GameAction } from './actions';
 import { generateNewBoardBlocks, processBlockAction, processMineBlockAction, processGameState } from './logic';
 import type { GameState } from './types';
 
-// Redux's Reducer type requires accepting `undefined` state (its one-time
-// internal @@redux/INIT dispatch), even though createStore is always called
-// here with an explicit preloadedState, so this default is never actually
-// used in practice.
-const defaultState: GameState = {
+// An empty-board placeholder: GameBoard dispatches CREATE_NEW_GAME on mount,
+// which immediately generates the real board, so this is only ever visible
+// for the first render before that dispatch lands.
+export const initialState: GameState = {
   blocks: [],
   score: 0,
   isMineStruck: false,
   gameState: 'new'
 };
 
-const gameReducer = (state: GameState = defaultState, action: GameAction): GameState => {
+const gameReducer = (state: GameState = initialState, action: GameAction): GameState => {
 
   switch (action.type) {
 

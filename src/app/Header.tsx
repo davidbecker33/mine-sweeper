@@ -1,16 +1,7 @@
 import React from 'react';
-import { bindActionCreators, type Dispatch } from 'redux';
-import { connect, type ConnectedProps } from 'react-redux';
+import { GameContext } from '../games/minesweeper/context';
 import { gameActions } from '../games/minesweeper/actions';
 import { cn } from '../engine/cn';
-
-function mapDispatchToProps(dispatch: Dispatch) {
-  return { actions: bindActionCreators(gameActions, dispatch) };
-}
-
-const connector = connect(null, mapDispatchToProps);
-
-type HeaderProps = ConnectedProps<typeof connector>;
 
 interface HeaderState {
   dropdownOpen: boolean;
@@ -20,8 +11,14 @@ interface HeaderState {
 // <Navbar>/<NavDropdown>, which crash under React 19 (legacy string refs /
 // removed childContextTypes API). Replaced wholesale by Phase 6's Tailwind
 // nav rather than upgrading this to react-bootstrap v2.
-class Header extends React.Component<HeaderProps, HeaderState> {
-  constructor(props: HeaderProps) {
+class Header extends React.Component<object, HeaderState> {
+  // GameProvider always wraps the tree (see index.tsx), so unlike useGame()
+  // -- which runtime-checks this for function components -- it's safe to
+  // assert the non-null variant once here rather than at every access.
+  static contextType = GameContext;
+  declare context: NonNullable<React.ContextType<typeof GameContext>>;
+
+  constructor(props: object) {
     super(props);
     this.state = { dropdownOpen: false };
   }
@@ -34,7 +31,7 @@ class Header extends React.Component<HeaderProps, HeaderState> {
   playAgain(e: React.MouseEvent) {
     e.preventDefault();
     this.setState({ dropdownOpen: false });
-    this.props.actions.createNewGame();
+    this.context.dispatch(gameActions.createNewGame());
   }
 
   render() {
@@ -62,4 +59,4 @@ class Header extends React.Component<HeaderProps, HeaderState> {
   }
 }
 
-export default connector(Header);
+export default Header;

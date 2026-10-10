@@ -1,46 +1,51 @@
 import React from 'react';
-import { bindActionCreators, type Dispatch } from 'redux';
-import { connect, type ConnectedProps } from 'react-redux';
+import { GameContext } from '../context';
 import { gameActions } from '../actions';
 import Block from './Block';
 import { cn } from '../../../engine/cn';
 import type { Cell, GameState } from '../types';
 
-function mapStateToProps(store: GameState) {
-  return {
-    blocks: store.blocks,
-    score: store.score,
-    isMineStruck: store.isMineStruck,
-    gameState: store.gameState
-  };
-}
-
-function mapDispatchToProps(dispatch: Dispatch) {
-  return { actions: bindActionCreators(gameActions, dispatch) };
-}
-
-const connector = connect(mapStateToProps, mapDispatchToProps);
-
-type GameBoardProps = ConnectedProps<typeof connector>;
-
 interface GameBoardState {
   showModal: boolean;
 }
 
-class GameBoard extends React.Component<GameBoardProps, GameBoardState> {
+class GameBoard extends React.Component<object, GameBoardState> {
+  // GameProvider always wraps the tree (see index.tsx), so unlike useGame()
+  // -- which runtime-checks this for function components -- it's safe to
+  // assert the non-null variant once here rather than at every access.
+  static contextType = GameContext;
+  declare context: NonNullable<React.ContextType<typeof GameContext>>;
 
-  constructor(props: GameBoardProps) {
+  // The reducer always returns a new state object per dispatch (`blocks` is
+  // always a fresh array), so comparing this.context.state by reference
+  // tells us "a dispatch just happened" -- which is what the old
+  // componentWillReceiveProps(nextProps) reacted to (prop-change-driven,
+  // via connect()). componentDidUpdate has no such distinction: it fires
+  // after *any* re-render, including ones from this component's own
+  // setState (open()/close()) -- reacting to those too would either loop
+  // forever (open() re-triggers itself) or make close() a no-op (it'd
+  // immediately reopen). Gating on the context reference restores the
+  // "only react to an actual new dispatch" semantics.
+  private lastState: GameState | null = null;
+
+  constructor(props: object) {
     super(props);
     this.state = { showModal: false };
   }
 
-  componentWillMount() {
-    this.props.actions.createNewGame();
+  componentDidMount() {
+    this.lastState = this.context.state;
+    this.context.dispatch(gameActions.createNewGame());
   }
 
-  componentWillReceiveProps(nextProps: GameBoardProps) {
+  componentDidUpdate() {
+    if (this.context.state === this.lastState) {
+      return;
+    }
+    this.lastState = this.context.state;
 
-    if (nextProps.isMineStruck || nextProps.gameState === 'success') {
+    const { isMineStruck, gameState } = this.context.state;
+    if (isMineStruck || gameState === 'success') {
       this.open();
     }
   }
@@ -57,9 +62,9 @@ class GameBoard extends React.Component<GameBoardProps, GameBoardState> {
 
     if (!block.visited) {
       if (block.isMine) {
-        this.props.actions.processMineClick(block);
+        this.context.dispatch(gameActions.processMineClick(block));
       } else {
-        this.props.actions.processClick(block);
+        this.context.dispatch(gameActions.processClick(block));
       }
     }
 
@@ -67,14 +72,14 @@ class GameBoard extends React.Component<GameBoardProps, GameBoardState> {
 
   playAgain() {
     this.close();
-    this.props.actions.createNewGame();
+    this.context.dispatch(gameActions.createNewGame());
   }
 
   getBlocks() {
 
     let mappedBlocks: React.ReactElement[] = [];
     let yIndex = 0;
-    this.props.blocks.forEach((xblocks, index) => {
+    this.context.state.blocks.forEach((xblocks, index) => {
 
       const yblocks = xblocks.map((block) => {
 
@@ -98,6 +103,7 @@ class GameBoard extends React.Component<GameBoardProps, GameBoardState> {
   }
 
   render() {
+    const { gameState } = this.context.state;
 
     return (
       <div className="board-container">
@@ -115,12 +121,12 @@ class GameBoard extends React.Component<GameBoardProps, GameBoardState> {
                   <h4 className="modal-title">MineSweeper</h4>
                 </div>
                 <div className="modal-body">
-                  <div className={cn({ hidden: this.props.gameState !== 'success' })}>
+                  <div className={cn({ hidden: gameState !== 'success' })}>
                     <h4>Congratulations!!!</h4>
                     <p>You successfully avoided all mines.</p>
                     <p><a href="#" onClick={this.playAgain.bind(this)} >Play again?</a></p>
                   </div>
-                  <div className={cn({ hidden: this.props.gameState !== 'failed' })}>
+                  <div className={cn({ hidden: gameState !== 'failed' })}>
                     <h4>Oooops!!</h4>
                     <p>You accidentally clicked on a mine.</p>
                     <p><a href="#" onClick={this.playAgain.bind(this)} >Play again?</a></p>
@@ -139,4 +145,4 @@ class GameBoard extends React.Component<GameBoardProps, GameBoardState> {
   }
 }
 
-export default connector(GameBoard);
+export default GameBoard;

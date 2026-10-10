@@ -113,17 +113,13 @@ The existing reducer is already a pure function of `(state, action) => newState`
 
 **Recommendation:** `useReducer` + React Context for the global game state, no new state library required.
 
-```
-engine/
-  game-context.tsx   # createContext + Provider wrapping useReducer(gameReducer, initialState)
-  use-game.ts         # custom hook: const { state, dispatch } = useGame()
-games/minesweeper/
-  reducer.ts          # same action shape, ported to TS, with the processGameState bug fixed
-```
+**Implementation note (what actually happened):** Same spirit, slightly different split — consistent with how `engine/` vs `games/minesweeper/` was divided in Phase 3, the *generic* Context-wiring boilerplate (`createContext` + `Provider` + `useReducer` + a `useGame()` hook) went in `engine/create-game-context.tsx` as a factory, `createGameContext<State, Action>(reducer, initialState)`, so the next game in the template gets the same plumbing for free instead of copy-pasting it. The Minesweeper-specific instantiation (`createGameContext<GameState, GameAction>(gameReducer, initialState)`) lives in `games/minesweeper/context.ts`. `reducer.ts`'s `initialState` (an empty-board placeholder — `GameBoard` immediately dispatches `CREATE_NEW_GAME` on mount, which is what actually generates the real board) is exported and reused as both the reducer's default parameter and the Provider's seed state, rather than duplicated.
 
-- `store/store.js` and the `redux`/`react-redux`/`redux-thunk` packages are deleted entirely.
-- `connect(mapStateToProps, mapDispatchToProps)` wrappers in `board.js` and `header.js` are replaced by `const { state, dispatch } = useGame()` inside the component — fewer layers, no boilerplate action-binding.
-- Action creators stay as plain functions returning `{ type, payload }`, now typed as a discriminated union (`type GameAction = { type: 'CREATE_NEW_GAME'; payload: { difficulty: Difficulty } } | ...`) so the reducer's `switch` is exhaustively checked by `tsc`.
+- `store/store.js` and the `redux`/`react-redux` packages are deleted entirely (`redux-thunk` was already dropped in Phase 2 — see its implementation note).
+- `connect(mapStateToProps, mapDispatchToProps)` wrappers in `GameBoard.tsx`/`Header.tsx` are gone. Both are still **class** components at this point (the class → function/hooks conversion is Phase 5's job, not this one), so they consume the context via `static contextType = GameContext` rather than the `useGame()` hook — `useGame()` exists now for Phase 5 to switch to later, with zero changes needed to the Context layer itself when that happens.
+- The `GameAction` discriminated union (`type GameAction = ReturnType<typeof gameActions.createNewGame> | ...`) was already introduced in Phase 3 to fix `bindActionCreators`'/the reducer `switch`'s typing — nothing further needed here.
+
+**A real pitfall hit along the way, worth flagging for the next game built on this pattern:** `GameBoard`'s old `componentWillReceiveProps(nextProps)` (open the modal when `isMineStruck || gameState === 'success'`) doesn't have a context equivalent — there's no "component receives new context" lifecycle for class components. The naive port to `componentDidUpdate()` running the same check **infinite-loops**: `componentDidUpdate` fires after *any* re-render, including ones from the component's own `setState` (`open()`/`close()`), so `open()` calling `setState` triggers another `componentDidUpdate`, which calls `open()` again, forever. The fix is to gate on whether `this.context.state` actually changed *by reference* (the reducer always returns a new object per dispatch, same as Redux did), not on the field values themselves — that distinguishes "a real dispatch happened" from "local UI state changed," which is exactly what `componentWillReceiveProps` was doing implicitly via its coupling to `connect()`'s prop diffing. See the comment on `GameBoard`'s `lastState` field for the full reasoning; this pattern (or its function-component/`useEffect` equivalent) will recur for any future game needing "react once to a state transition, not a UI-triggered re-render" semantics.
 
 **When to reach for something heavier than Context:** if a future game in this template needs frequent high-frequency updates (e.g., a physics-driven game re-rendering 60x/sec) where Context's "every consumer re-renders" behavior becomes a bottleneck, add **Zustand** at that point — it's a ~1KB hook-based store with selector-based subscriptions, and it fits the "hooks, not Redux" direction the same way. Don't add it preemptively; Minesweeper's update frequency (user clicks) doesn't need it.
 
