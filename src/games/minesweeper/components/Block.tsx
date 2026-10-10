@@ -1,5 +1,6 @@
 import { memo, type KeyboardEvent } from 'react';
-import { cn } from '../../../engine/cn';
+import { BombIcon } from 'lucide-react';
+import { cn } from '@/engine/cn';
 import type { Cell } from '../types';
 
 interface BlockProps {
@@ -30,6 +31,19 @@ function describeCell(block: Cell): string {
   return `${position}, revealed, ${block.count} adjacent mine${block.count === 1 ? '' : 's'}`;
 }
 
+// Classic Minesweeper mine-count color coding, extended from the original
+// CSS's 1-3 to the full 1-8 range a 9x9 board (max 8 neighbors) can produce.
+const COUNT_COLOR: Record<number, string> = {
+  1: 'text-blue-600 dark:text-blue-400',
+  2: 'text-green-600 dark:text-green-400',
+  3: 'text-red-600 dark:text-red-400',
+  4: 'text-indigo-700 dark:text-indigo-400',
+  5: 'text-rose-800 dark:text-rose-400',
+  6: 'text-teal-600 dark:text-teal-400',
+  7: 'text-foreground',
+  8: 'text-muted-foreground'
+};
+
 function Block({ block, focused, onActivate, onNavigate, registerRef }: BlockProps) {
   return (
     <button
@@ -38,21 +52,23 @@ function Block({ block, focused, onActivate, onNavigate, registerRef }: BlockPro
       role="gridcell"
       tabIndex={focused ? 0 : -1}
       aria-label={describeCell(block)}
-      className={cn({ active: !block.visited, inactive: block.visited })}
+      data-state={block.visited ? 'revealed' : 'hidden'}
+      data-mine={block.isMine || undefined}
+      className={cn(
+        'flex size-8 items-center justify-center border text-sm font-bold select-none',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        block.visited
+          ? 'border-border/60 bg-background'
+          : 'border-border bg-muted shadow-[inset_1px_1px_0_var(--color-background),inset_-1px_-1px_0_rgba(0,0,0,0.15)] hover:brightness-95 active:translate-y-px',
+        block.visited && block.isMine && 'bg-destructive/15'
+      )}
       onClick={() => onActivate(block)}
       onKeyDown={(e) => onNavigate(e, block)}
     >
-      <span className={cn({ visible: block.isMine, mine: block.isMine })}></span>
-      <span
-        className={cn({
-          hidden: !block.visited || block.isMine,
-          'prox-1': block.count === 1,
-          'prox-2': block.count === 2,
-          'prox-3': block.count === 3
-        })}
-      >
-        {block.count === 0 ? '' : block.count}
-      </span>
+      {block.visited && block.isMine && <BombIcon className="size-4 text-destructive" />}
+      {block.visited && !block.isMine && block.count > 0 && (
+        <span className={COUNT_COLOR[block.count]}>{block.count}</span>
+      )}
     </button>
   );
 }

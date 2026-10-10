@@ -55,7 +55,10 @@ describe('GameBoard', () => {
     await userEvent.click(await screen.findByRole('gridcell', { name: /Row 2, Column 2,/ }));
 
     expect(await screen.findByText('Oooops!!')).toBeInTheDocument();
-    expect(screen.getByRole('gridcell', { name: /Row 2, Column 2, mine/ })).toBeInTheDocument();
+    // Radix Dialog marks the rest of the page aria-hidden while open (real
+    // modal-inerting behavior our old hand-rolled one never had) -- `hidden:
+    // true` is needed to still inspect it here.
+    expect(screen.getByRole('gridcell', { name: /Row 2, Column 2, mine/, hidden: true })).toBeInTheDocument();
   });
 
   it('Close dismisses the modal, and it does not reopen on a later safe click', async () => {
@@ -75,7 +78,7 @@ describe('GameBoard', () => {
     await userEvent.click(await screen.findByRole('gridcell', { name: /Row 2, Column 2,/ }));
     await screen.findByText('Oooops!!');
 
-    await userEvent.click(screen.getByRole('link', { name: 'Play again?' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Play again?' }));
 
     expect(screen.queryByText('Oooops!!')).not.toBeInTheDocument();
     expect(screen.getByRole('gridcell', { name: /Row 2, Column 2, hidden/ })).toBeInTheDocument();

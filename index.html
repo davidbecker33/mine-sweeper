@@ -2,8 +2,20 @@
 <html>
   <head>
     <title>MineSweeper</title>
-    <link href="styles/bootstrap.min.css" type="text/css" rel="stylesheet" />
-    <link href="styles/styles.css" type="text/css" rel="stylesheet" />
+    <script>
+      // Applied before first paint to avoid a flash of the wrong theme, and
+      // kept in sync if the OS theme changes while the tab is open. No
+      // manual toggle yet (not asked for) -- this just makes the dark:
+      // variants added in Phase 6 follow the OS/browser preference.
+      var darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      var syncTheme = function (matches) {
+        document.documentElement.classList.toggle('dark', matches);
+      };
+      syncTheme(darkQuery.matches);
+      darkQuery.addEventListener('change', function (e) {
+        syncTheme(e.matches);
+      });
+    </script>
   </head>
   <body>
     <div id="app"></div>

@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useGame } from '../context';
 import { gameActions } from '../actions';
 import Block from './Block';
@@ -93,21 +95,19 @@ export default function GameBoard() {
     }
   }, []);
 
-  // Plain Bootstrap-3-classed markup standing in for react-bootstrap's
-  // <Modal>, which crashes under React 19 (legacy string refs / removed
-  // childContextTypes API). Replaced wholesale by Phase 6's Tailwind/Radix
-  // dialog rather than upgrading this to react-bootstrap v2.
-  function onBackdropClick(e: MouseEvent<HTMLDivElement>) {
-    if (e.target === e.currentTarget) {
-      close();
-    }
-  }
-
   return (
-    <div className="board-container">
-      <div className="board" role="grid" aria-label="Minesweeper board">
+    <div className="flex flex-col items-center gap-4">
+      <div
+        className="grid gap-0.5 rounded-md bg-border p-0.5 shadow-sm"
+        style={{ gridTemplateColumns: `repeat(${width}, calc(var(--spacing) * 8))` }}
+        role="grid"
+        aria-label="Minesweeper board"
+      >
         {blocks.map((row, x) => (
-          <div className="board-row" role="row" key={x}>
+          // display: contents (Tailwind's `contents`) keeps role="row" in
+          // the accessibility tree without taking this div out of the CSS
+          // grid above -- its <Block> children participate directly.
+          <div className="contents" role="row" key={x}>
             {row.map((block, y) => (
               <Block
                 key={block.key}
@@ -122,50 +122,35 @@ export default function GameBoard() {
         ))}
       </div>
 
-      {showModal && (
-        <div className="modal in" style={{ display: 'block' }} tabIndex={-1} role="dialog" onClick={onBackdropClick}>
-          <div className="modal-dialog" role="document">
-            <div className="modal-content">
-              <div className="modal-header">
-                <button type="button" className="close" aria-label="Close dialog" onClick={close}>
-                  <span aria-hidden="true">&times;</span>
-                </button>
-                <h4 className="modal-title">MineSweeper</h4>
-              </div>
-              <div className="modal-body">
-                {gameState === 'success' && (
-                  <div>
-                    <h4>Congratulations!!!</h4>
-                    <p>You successfully avoided all mines.</p>
-                    <p>
-                      <a href="#" onClick={playAgain}>
-                        Play again?
-                      </a>
-                    </p>
-                  </div>
-                )}
-                {gameState === 'failed' && (
-                  <div>
-                    <h4>Oooops!!</h4>
-                    <p>You accidentally clicked on a mine.</p>
-                    <p>
-                      <a href="#" onClick={playAgain}>
-                        Play again?
-                      </a>
-                    </p>
-                  </div>
-                )}
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-default" onClick={close}>
-                  Close
-                </button>
-              </div>
+      <Dialog open={showModal} onOpenChange={(open) => !open && close()}>
+        {/* The explicit "Close" button below already covers this (along
+            with Esc and clicking outside, both still handled by Radix) --
+            showing DialogContent's own auto-generated X button too would
+            just be a second, ambiguously-identical "Close" control. */}
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>MineSweeper</DialogTitle>
+          </DialogHeader>
+          {gameState === 'success' && (
+            <div className="space-y-1">
+              <p className="font-semibold">Congratulations!!!</p>
+              <p className="text-muted-foreground">You successfully avoided all mines.</p>
             </div>
-          </div>
-        </div>
-      )}
-      {showModal && <div className="modal-backdrop in"></div>}
+          )}
+          {gameState === 'failed' && (
+            <div className="space-y-1">
+              <p className="font-semibold">Oooops!!</p>
+              <p className="text-muted-foreground">You accidentally clicked on a mine.</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={close}>
+              Close
+            </Button>
+            <Button onClick={playAgain}>Play again?</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -112,8 +112,18 @@ describe('processMineBlockAction', () => {
     const board = makeBoard(3, mines);
     processMineBlockAction(board[0][0], board);
 
-    expect(board.flat().filter((cell) => cell.isMine).every((cell) => cell.visited)).toBe(true);
-    expect(board.flat().filter((cell) => !cell.isMine).every((cell) => !cell.visited)).toBe(true);
+    expect(
+      board
+        .flat()
+        .filter((cell) => cell.isMine)
+        .every((cell) => cell.visited)
+    ).toBe(true);
+    expect(
+      board
+        .flat()
+        .filter((cell) => !cell.isMine)
+        .every((cell) => !cell.visited)
+    ).toBe(true);
   });
 
   it('replaces revealed mine objects by reference rather than mutating them in place', () => {

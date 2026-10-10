@@ -12,7 +12,9 @@ const noop = () => {};
 
 describe('Block', () => {
   it('renders a hidden cell as a non-tabbable gridcell with a position-and-state label', () => {
-    render(<Block block={makeCell({ x: 2, y: 3 })} focused={false} onActivate={noop} onNavigate={noop} registerRef={noop} />);
+    render(
+      <Block block={makeCell({ x: 2, y: 3 })} focused={false} onActivate={noop} onNavigate={noop} registerRef={noop} />
+    );
 
     const cell = screen.getByRole('gridcell', { name: 'Row 3, Column 4, hidden' });
     expect(cell).toHaveAttribute('tabindex', '-1');
@@ -25,17 +27,39 @@ describe('Block', () => {
   });
 
   it('describes a revealed empty cell', () => {
-    render(<Block block={makeCell({ visited: true, count: 0 })} focused={false} onActivate={noop} onNavigate={noop} registerRef={noop} />);
+    render(
+      <Block
+        block={makeCell({ visited: true, count: 0 })}
+        focused={false}
+        onActivate={noop}
+        onNavigate={noop}
+        registerRef={noop}
+      />
+    );
 
     expect(screen.getByRole('gridcell', { name: /revealed, empty/ })).toBeInTheDocument();
   });
 
   it('describes a revealed numbered cell, pluralizing "mine(s)" correctly', () => {
-    render(<Block block={makeCell({ visited: true, count: 1 })} focused={false} onActivate={noop} onNavigate={noop} registerRef={noop} />);
+    render(
+      <Block
+        block={makeCell({ visited: true, count: 1 })}
+        focused={false}
+        onActivate={noop}
+        onNavigate={noop}
+        registerRef={noop}
+      />
+    );
     expect(screen.getByRole('gridcell', { name: /1 adjacent mine$/ })).toBeInTheDocument();
 
     const { unmount } = render(
-      <Block block={makeCell({ visited: true, count: 2 })} focused={false} onActivate={noop} onNavigate={noop} registerRef={noop} />
+      <Block
+        block={makeCell({ visited: true, count: 2 })}
+        focused={false}
+        onActivate={noop}
+        onNavigate={noop}
+        registerRef={noop}
+      />
     );
     expect(screen.getByRole('gridcell', { name: /2 adjacent mines/ })).toBeInTheDocument();
     unmount();
@@ -43,7 +67,13 @@ describe('Block', () => {
 
   it('describes a struck mine', () => {
     render(
-      <Block block={makeCell({ visited: true, isMine: true })} focused={false} onActivate={noop} onNavigate={noop} registerRef={noop} />
+      <Block
+        block={makeCell({ visited: true, isMine: true })}
+        focused={false}
+        onActivate={noop}
+        onNavigate={noop}
+        registerRef={noop}
+      />
     );
     expect(screen.getByRole('gridcell', { name: /mine$/ })).toBeInTheDocument();
   });
