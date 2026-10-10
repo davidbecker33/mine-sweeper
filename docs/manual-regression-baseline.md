@@ -1,9 +1,13 @@
 # Manual Regression Baseline
 
-There is no automated test coverage yet (added in Phase 5 of
-[modernization-plan.md](modernization-plan.md)). Until then, run through this
-checklist after each phase to confirm nothing broke. Run it once now, on the
-pre-migration behavior, so later runs have something to compare against.
+**Status: superseded by automated coverage as of Phase 5.** This checklist
+was the only regression safety net from Phase 0 through Phase 4 (there was no
+test coverage yet). As of Phase 5, `npm test` (Vitest + React Testing
+Library) and `npm run test:e2e` (Playwright, `e2e/minesweeper.spec.ts`) cover
+everything below in automated form — see the Phase 5 implementation notes in
+[modernization-plan.md](modernization-plan.md). Kept here as a reference for
+what the automated suite is standing in for, and as a manual fallback if
+you're debugging something the suite doesn't catch.
 
 ## Setup
 
@@ -41,12 +45,21 @@ Open the app in a browser.
 
 ## Known pre-existing issues (not regressions if still present)
 
-These are tracked in [modernization-plan.md](modernization-plan.md) and are
-expected to persist until the phase that addresses them:
+These are tracked in [modernization-plan.md](modernization-plan.md):
 
 - Mine count isn't always exactly 10 (RNG in `generateRandomMineNodes` can
-  produce duplicate indices, silently placing fewer mines).
-- Keyboard-only and screen-reader users cannot play (no ARIA grid semantics,
-  no focus/keyboard handling) — addressed in Phase 5.
-- No difficulty levels; board is a hardcoded 9×9 with 10 mines — addressed
-  alongside the `Difficulty` type in Phase 3.
+  produce duplicate indices, silently placing fewer mines) — still present;
+  not in scope for any phase so far. Both the unit and e2e test suites
+  assert a lower bound (`> 0`, `<= 10`) rather than an exact count of 10, so
+  they won't flake on this.
+- No difficulty levels; board is a hardcoded 9×9 with 10 mines — the
+  `Difficulty` type is deliberately not added until a phase actually
+  implements it (see the Phase 3 implementation note).
+
+Resolved since this checklist was written:
+
+- Keyboard-only and screen-reader users could not play (no ARIA grid
+  semantics, no focus/keyboard handling) — fixed in Phase 5.
+- The reducer forced `gameState` to `'failed'` on every non-winning click —
+  fixed in Phase 5 (see its implementation notes for why the original "stale
+  state" description of this bug was itself imprecise).

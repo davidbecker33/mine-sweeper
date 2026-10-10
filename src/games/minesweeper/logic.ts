@@ -27,9 +27,19 @@ export function generateNewBoardBlocks(): MinesweeperBoard {
   return board;
 }
 
+// Reveal replaces the cell object at [x][y] rather than mutating its
+// `visited` property in place. Block is wrapped in React.memo and compares
+// its `block` prop by reference -- an in-place mutation leaves that
+// reference unchanged, so the memoized cell would never re-render even
+// though its data changed underneath it.
+function reveal(gameBlocks: MinesweeperBoard, cell: Cell): Cell {
+  const revealed = { ...cell, visited: true };
+  gameBlocks[cell.x][cell.y] = revealed;
+  return revealed;
+}
+
 export function processBlockAction(block: Cell, gameBlocks: MinesweeperBoard): MinesweeperBoard {
-  // set as visited
-  gameBlocks[block.x][block.y].visited = true;
+  reveal(gameBlocks, block);
 
   if (block.count === 0) {
     const nodes = getNeighbors(block, gameBlocks).filter((node) => !node.visited);
@@ -39,7 +49,7 @@ export function processBlockAction(block: Cell, gameBlocks: MinesweeperBoard): M
         if (n.count === 0) {
           processBlockAction(n, gameBlocks);
         } else {
-          gameBlocks[n.x][n.y].visited = true;
+          reveal(gameBlocks, n);
         }
       }
     }
@@ -52,7 +62,7 @@ export function processMineBlockAction(_block: Cell, gameBlocks: MinesweeperBoar
   gameBlocks.forEach((row) => {
     row.forEach((cell) => {
       if (cell.isMine) {
-        gameBlocks[cell.x][cell.y].visited = true;
+        reveal(gameBlocks, cell);
       }
     });
   });

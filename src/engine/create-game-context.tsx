@@ -16,11 +16,7 @@ export function createGameContext<State, Action>(reducer: Reducer<State, Action>
 
   function GameProvider({ children }: { children: ReactNode }) {
     const [state, dispatch] = useReducer(reducer, initialState);
-    return (
-      <GameContext.Provider value={{ state, dispatch }}>
-        {children}
-      </GameContext.Provider>
-    );
+    return <GameContext.Provider value={{ state, dispatch }}>{children}</GameContext.Provider>;
   }
 
   function useGame(): GameContextValue<State, Action> {

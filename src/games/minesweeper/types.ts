@@ -20,4 +20,12 @@ export interface GameState {
   score: number;
   isMineStruck: boolean;
   gameState: GameStatus;
+  // Which gameState value the result modal has been dismissed for, if any.
+  // Lets "should the modal be showing" be a pure derived value
+  // (isMineStruck || gameState === 'success') && dismissedFor !== gameState
+  // instead of local component state mirroring context state -- see the
+  // Phase 5 note in the modernization plan for why that matters (it also
+  // fixes a cross-component bug: Header's "New game" couldn't reset
+  // GameBoard's local dismissal state, since they're siblings).
+  dismissedFor: GameStatus | null;
 }
