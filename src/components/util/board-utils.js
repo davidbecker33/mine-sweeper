@@ -1,5 +1,3 @@
-import _ from 'lodash';
-
 export function generateNewBoardBlocks() {
 
       let dimension = 9;
@@ -8,7 +6,7 @@ export function generateNewBoardBlocks() {
 
       for (let i = 0; i < dimension; i++) {
         board[i] = [dimension];
-        for (let j = 0; j < dimension; j++) {   
+        for (let j = 0; j < dimension; j++) {
           board[i][j] = {
                  key: counter,
                  x: i,
@@ -23,7 +21,7 @@ export function generateNewBoardBlocks() {
         j = 0;
       }
       generateRandomMineNodes(dimension, board);
-     
+
      return board;
 }
 
@@ -33,7 +31,7 @@ export function adjacentNodes(node, nodesArray) {
 
     let x = node.x, y = node.y;
     let nodes = [];
-  
+
     // left
     if(x > 0) {
        nodes.push(nodesArray[x-1][y]);
@@ -42,8 +40,8 @@ export function adjacentNodes(node, nodesArray) {
     if(x + 1 < nodesArray.length) {
        nodes.push(nodesArray[x+1][y]);
     }
-    
-    // upper left 
+
+    // upper left
     if(x > 0 && y > 0) {
        nodes.push(nodesArray[x-1][y-1]);
     }
@@ -56,7 +54,7 @@ export function adjacentNodes(node, nodesArray) {
        nodes.push(nodesArray[x+1][y-1]);
     }
 
-     // lower left 
+     // lower left
     if(x > 0 && y + 1 < nodesArray[0].length) {
        nodes.push(nodesArray[x-1][y+1]);
     }
@@ -68,25 +66,24 @@ export function adjacentNodes(node, nodesArray) {
     if(x + 1 < nodesArray.length && y + 1 < nodesArray[0].length) {
        nodes.push(nodesArray[x+1][y+1]);
     }
-    
+
     return nodes;
-    
+
 }
 
 export function processBlockAction(block, gameBlocks) {
 
     // set as visited
     gameBlocks[block.x][block.y].visited = true;
-  
+
     if(block.count == 0) {
 
-      let nodes = adjacentNodes(block, gameBlocks);
-      _.remove(nodes, node => { return node.visited });
-     
+      let nodes = adjacentNodes(block, gameBlocks).filter(node => !node.visited);
+
       if(nodes.length == 0) {
          return;
       }
-      
+
       for(let i = 0; i < nodes.length; i++) {
         let n = nodes[i];
         if(!n.isMine) {
@@ -104,39 +101,39 @@ export function processBlockAction(block, gameBlocks) {
 export function processMineBlockAction(block, gameBlocks) {
 
     // reveal all mines and the game is over
-    _.forEach(gameBlocks, x => {
-      _.forEach(x, block => { 
-     
+    gameBlocks.forEach(x => {
+      x.forEach(block => {
+
         if(block.isMine) {
             gameBlocks[block.x][block.y].visited = true;
         }
      });
     });
-   
+
     return gameBlocks;
 }
 
 
 export function generateRandomMineNodes(dimension, gameBlocks) {
-  
+
     let randomNodes = [];
     let blockCount = dimension * dimension;
     //let mineCount = blockCount * .1; (auto calc by percent)
     let mineCount = 10;
-  
+
     for(let i = 0; i < mineCount; i++) {
-       randomNodes.push(Math.floor((Math.random() * blockCount -1)) + 1); 
-      
+       randomNodes.push(Math.floor((Math.random() * blockCount -1)) + 1);
+
     }
-     
-    _.forEach(gameBlocks, x => {
-      _.forEach(x, block => { 
-     
+
+    gameBlocks.forEach(x => {
+      x.forEach(block => {
+
         if(randomNodes.indexOf(block.key) >= 0) {
-              
+
           block.isMine = true;
-        
-          _.forEach(adjacentNodes(block, gameBlocks), node => {
+
+          adjacentNodes(block, gameBlocks).forEach(node => {
              node.count = node.count + 1;
           });
 
@@ -151,9 +148,9 @@ export function processGameState(gameBlocks) {
     // check game state
     let isSuccess = true;
 
-    _.forEach(gameBlocks, x => {
-      _.forEach(x, block => { 
-        
+    gameBlocks.forEach(x => {
+      x.forEach(block => {
+
         if(!block.isMine && !block.visited) {
            isSuccess = false;
         }
@@ -162,4 +159,3 @@ export function processGameState(gameBlocks) {
 
     return isSuccess;
 }
-

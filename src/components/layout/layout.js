@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import React from 'react';
 import Header from './header.component'
 import Footer from './footer.component'

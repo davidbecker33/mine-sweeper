@@ -81,6 +81,12 @@ Upgrade/replace in `package.json` (major-version targets; grab latest patch with
 
 New additions are listed per-phase below rather than dumped here, so each one is tied to a concrete reason.
 
+**Implementation note (what actually happened):** `react-bootstrap@0.32` turned out to hard-crash under React 19 — it uses the legacy `childContextTypes` API (removed in React 19) and string refs internally, which threw inside `<Navbar>` with no way to opt out. Upgrading it to the current major (`react-bootstrap@2.x`, Bootstrap 5-based) would have meant redoing the same markup again in Phase 6, so instead `react-bootstrap` and `bootstrap` were dropped here rather than deferred. The two usages (`<Navbar>`/`<NavDropdown>` in `header.jsx`, `<Modal>` in `board.jsx`) were replaced with plain markup against the *existing* CSS classes as a bridge to Phase 6. Along the way this also surfaced a pre-existing, unrelated bug: `public/styles/bootstrap.min.css` is actually **Bootstrap 3** (`.in`/`.navbar-default`/`.open > .dropdown-menu` conventions), despite `package.json` having declared `bootstrap: ^4.1.0` — it happened to work before only because `react-bootstrap@0.32` itself renders Bootstrap 3 markup. The replacement markup targets Bootstrap 3 classes to match the file that's actually being served. Phase 6 replaces all of this CSS and markup wholesale, so this is intentionally throwaway scaffolding, not a long-term investment.
+
+`react-router`/`react-router-dom` were removed outright rather than upgraded to v7 — the app only ever registered a single `"/"` route wrapping `<App>`, so the router wasn't doing anything functional. `index.jsx` now renders `<App />` directly. If a future game in this template needs multiple screens, add React Router (or an equivalent) fresh at that point rather than carrying the v4→v7 migration of unused code.
+
+`redux-thunk` was dropped as dead weight — it was a declared dependency but never actually wired into `applyMiddleware` (the store was created as plain `createStore(gameReducer, initialState)`), so there was nothing to migrate. `react-intl` was dropped the same way — declared but never imported anywhere in `src/`.
+
 ## Phase 3 — TypeScript migration + shared type models
 
 Replace Babel with TypeScript directly (Vite compiles `.ts`/`.tsx` natively; run `tsc --noEmit` in CI for type-checking since Vite's build doesn't type-check by default).
@@ -164,9 +170,11 @@ games/minesweeper/
 
 ## Phase 6 — Styling: Bootstrap → Tailwind
 
-1. Remove `bootstrap`, `react-bootstrap`, `styles/bootstrap.min.css`.
+**Note:** `react-bootstrap` and the `bootstrap` devDependency were already removed in Phase 2 (they crashed under React 19 — see the implementation note there), and replaced with plain markup against `public/styles/bootstrap.min.css` as a bridge. That CSS file — confirmed to actually be Bootstrap 3, not 4 — and the bridge markup in `header.jsx`/`board.jsx` are what this phase replaces.
+
+1. Remove `styles/bootstrap.min.css` and the hand-rolled Bootstrap-3-classed markup from `header.jsx`/`board.jsx`.
 2. Add **Tailwind CSS v4** (CSS-first config via `@theme`, no separate `tailwind.config.js` needed for simple cases) + its Vite plugin.
-3. Rebuild the modal currently provided by `react-bootstrap`'s `<Modal>` using an accessible headless primitive rather than hand-rolling focus-trap/ESC-to-close logic: **Radix UI Dialog** (or `shadcn/ui`, which is Radix + Tailwind pre-wired — a good fit since you're already moving to Tailwind, and its components are copied into your repo rather than installed as an opaque dependency, which suits a template).
+3. Rebuild the modal using an accessible headless primitive rather than hand-rolling focus-trap/ESC-to-close logic: **Radix UI Dialog** (or `shadcn/ui`, which is Radix + Tailwind pre-wired — a good fit since you're already moving to Tailwind, and its components are copied into your repo rather than installed as an opaque dependency, which suits a template).
 4. Port `styles/styles.css`'s game-specific rules (`.board`, `.active`/`.inactive`, `.mine`, `.prox-1/2/3`) to Tailwind utility classes or a small `@layer components` block; keep mine-count color coding (classic Minesweeper UX: 1=blue, 2=green, 3=red, etc.) as Tailwind classes driven by the typed `adjacentMines` value instead of the current manual `prox-1`/`prox-2`/`prox-3` enumeration (extend it to cover 4–8, which the current CSS doesn't).
 5. Add a dark-mode variant (`dark:` classes) — cheap to get now while rebuilding styles, and expected on mobile/PWA installs.
 

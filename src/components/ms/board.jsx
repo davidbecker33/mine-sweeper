@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
@@ -6,7 +5,6 @@ import { gameActions } from '../action/actions'
 import Block from './block';
 import Counter from '../util/counter';
 import { rjsClass } from '../util/rjs-directives';
-import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter, Button } from 'react-bootstrap';
 
 function mapStateToProps(store) {
   return {
@@ -86,6 +84,17 @@ class GameBoard extends React.Component {
     return mappedBlocks;
 
   }
+
+  // Plain Bootstrap-3-classed markup standing in for react-bootstrap's
+  // <Modal>, which crashes under React 19 (legacy string refs / removed
+  // childContextTypes API). Replaced wholesale by Phase 6's Tailwind/Radix
+  // dialog rather than upgrading this to react-bootstrap v2.
+  onBackdropClick(e) {
+    if (e.target === e.currentTarget) {
+      this.close();
+    }
+  }
+
   render() {
 
     return (
@@ -93,26 +102,36 @@ class GameBoard extends React.Component {
 
         <div className="board"> {this.getBlocks()} </div>
 
-        <Modal show={this.state.showModal} onHide={this.close.bind(this)}>
-          <Modal.Header closeButton>
-            <Modal.Title>MineSweeper</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <div className={rjsClass({ 'hidden': this.props.gameState !== 'success' })}>
-              <h4>Congratulations!!!</h4>
-              <p>You successfully avoided all mines.</p>
-              <p><a href="#" onClick={this.playAgain.bind(this)} >Play again?</a></p>
+        {this.state.showModal &&
+          <div className="modal in" style={{ display: 'block' }} tabIndex="-1" role="dialog" onClick={this.onBackdropClick.bind(this)}>
+            <div className="modal-dialog" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <button type="button" className="close" aria-label="Close" onClick={this.close.bind(this)}>
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                  <h4 className="modal-title">MineSweeper</h4>
+                </div>
+                <div className="modal-body">
+                  <div className={rjsClass({ 'hidden': this.props.gameState !== 'success' })}>
+                    <h4>Congratulations!!!</h4>
+                    <p>You successfully avoided all mines.</p>
+                    <p><a href="#" onClick={this.playAgain.bind(this)} >Play again?</a></p>
+                  </div>
+                  <div className={rjsClass({ 'hidden': this.props.gameState !== 'failed' })}>
+                    <h4>Oooops!!</h4>
+                    <p>You accidentally clicked on a mine.</p>
+                    <p><a href="#" onClick={this.playAgain.bind(this)} >Play again?</a></p>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-default" onClick={this.close.bind(this)}>Close</button>
+                </div>
+              </div>
             </div>
-            <div className={rjsClass({ 'hidden': this.props.gameState !== 'failed' })}>
-              <h4>Oooops!!</h4>
-              <p>You accidentally clicked on a mine.</p>
-              <p><a href="#" onClick={this.playAgain.bind(this)} >Play again?</a></p>
-            </div>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button onClick={this.close.bind(this)}>Close</Button>
-          </Modal.Footer>
-        </Modal>
+          </div>
+        }
+        {this.state.showModal && <div className="modal-backdrop in"></div>}
       </div>
     );
   }

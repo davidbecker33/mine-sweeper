@@ -13,20 +13,13 @@
   "author": "David Becker <davidbecker333@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "react": "^15.4.2",
-    "react-dom": "^15.4.2",
-    "react-intl": "^2.2.3",
-    "react-redux": "^5.0.7",
-    "react-router": "^4.2.0",
-    "react-router-dom": "^4.2.2",
-    "redux": "^4.0.0",
-    "redux-thunk": "^2.2.0"
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-redux": "^9.3.0",
+    "redux": "^5.0.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.1.2",
-    "bootstrap": "^4.1.0",
-    "react-bootstrap": "^0.32.1",
-    "react-timer-mixin": "^0.13.3",
     "vite": "^8.3.4"
   },
   "engines": {

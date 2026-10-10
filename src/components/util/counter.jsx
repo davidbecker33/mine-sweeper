@@ -1,6 +1,4 @@
-import _ from 'lodash';
 import React from 'react';
-import TimerMixin from 'react-timer-mixin';
 
 export default class Counter extends React.Component {
 
@@ -15,28 +13,28 @@ export default class Counter extends React.Component {
   }
 
   componentDidMount() {
-  	this.counter = TimerMixin.setInterval(() => {
+  	this.counter = window.setInterval(() => {
   		if(this.paused) {
   			this.count = this.count - 1;
   		}
 
   		if (this.count <= 0)
   		{
-  			TimerMixin.clearInterval(this.counter);
+  			window.clearInterval(this.counter);
 		     //counter ended, do something here
 		     this.stop();
 		     return;
 		 }
 		 this.setState({
-  				count: this.count 
+  				count: this.count
   			});
 		  //Do code for showing the number of seconds here
-		 
+
 		}, 1000);
   }
 
   componentWillUnmount() {
-  	TimerMixin.clearInterval(this.counter);
+  	window.clearInterval(this.counter);
   }
 
   render() {
@@ -48,7 +46,7 @@ export default class Counter extends React.Component {
   }
 
   stop() {
-  	TimerMixin.clearInterval(this.counter);
+  	window.clearInterval(this.counter);
   }
 
   pause() {
