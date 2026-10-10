@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import useSound from 'use-sound';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useGame } from '../context';
 import { gameActions } from '../actions';
 import Block from './Block';
 import type { Cell } from '../types';
+import revealSoundUrl from '../sounds/reveal.wav';
+import winSoundUrl from '../sounds/win.wav';
+import loseSoundUrl from '../sounds/lose.wav';
 
 function cellKey(x: number, y: number): string {
   return `${x}-${y}`;
@@ -32,9 +36,31 @@ export default function GameBoard() {
   const height = blocks.length;
   const width = blocks[0]?.length ?? 0;
 
+  // use-sound's play functions stabilize (via its own internal useCallback)
+  // once each sound finishes its initial async load, same as dispatch --
+  // safe to depend on below without threatening handleActivate's stability
+  // (see its own note on why that matters for Block's React.memo).
+  const [playReveal] = useSound(revealSoundUrl, { volume: 0.4 });
+  const [playWin] = useSound(winSoundUrl, { volume: 0.5 });
+  const [playLose] = useSound(loseSoundUrl, { volume: 0.5 });
+
   useEffect(() => {
     dispatch(gameActions.createNewGame());
   }, [dispatch]);
+
+  // Each fires once per actual transition (useEffect's dependency diffing),
+  // not on every render -- so these don't replay on, say, a focus change.
+  useEffect(() => {
+    if (isMineStruck) {
+      playLose();
+    }
+  }, [isMineStruck, playLose]);
+
+  useEffect(() => {
+    if (gameState === 'success') {
+      playWin();
+    }
+  }, [gameState, playWin]);
 
   const close = useCallback(() => dispatch(gameActions.dismissResult()), [dispatch]);
 
@@ -43,10 +69,15 @@ export default function GameBoard() {
   const handleActivate = useCallback(
     (block: Cell) => {
       if (!block.visited) {
-        dispatch(block.isMine ? gameActions.processMineClick(block) : gameActions.processClick(block));
+        if (block.isMine) {
+          dispatch(gameActions.processMineClick(block));
+        } else {
+          dispatch(gameActions.processClick(block));
+          playReveal();
+        }
       }
     },
-    [dispatch]
+    [dispatch, playReveal]
   );
 
   const moveFocus = useCallback(

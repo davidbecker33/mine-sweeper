@@ -1,4 +1,5 @@
 import { memo, type KeyboardEvent } from 'react';
+import { motion } from 'motion/react';
 import { BombIcon } from 'lucide-react';
 import { cn } from '@/engine/cn';
 import type { Cell } from '../types';
@@ -46,7 +47,7 @@ const COUNT_COLOR: Record<number, string> = {
 
 function Block({ block, focused, onActivate, onNavigate, registerRef }: BlockProps) {
   return (
-    <button
+    <motion.button
       type="button"
       ref={(el) => registerRef(block, el)}
       role="gridcell"
@@ -62,6 +63,12 @@ function Block({ block, focused, onActivate, onNavigate, registerRef }: BlockPro
           : 'border-border bg-muted shadow-[inset_1px_1px_0_var(--color-background),inset_-1px_-1px_0_rgba(0,0,0,0.15)] hover:brightness-95 active:translate-y-px',
         block.visited && block.isMine && 'bg-destructive/15'
       )}
+      // Pops in once, right when this cell flips from hidden to revealed --
+      // Block only re-renders when `block` (or `focused`) actually changes
+      // (React.memo; see the implementation note above), so this keyframe
+      // animation doesn't re-fire on unrelated re-renders.
+      animate={block.visited ? { scale: [0.75, 1.08, 1] } : { scale: 1 }}
+      transition={{ duration: 0.22, ease: 'easeOut' }}
       onClick={() => onActivate(block)}
       onKeyDown={(e) => onNavigate(e, block)}
     >
@@ -69,7 +76,7 @@ function Block({ block, focused, onActivate, onNavigate, registerRef }: BlockPro
       {block.visited && !block.isMine && block.count > 0 && (
         <span className={COUNT_COLOR[block.count]}>{block.count}</span>
       )}
-    </button>
+    </motion.button>
   );
 }
 
