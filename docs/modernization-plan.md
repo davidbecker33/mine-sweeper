@@ -91,45 +91,19 @@ New additions are listed per-phase below rather than dumped here, so each one is
 
 Replace Babel with TypeScript directly (Vite compiles `.ts`/`.tsx` natively; run `tsc --noEmit` in CI for type-checking since Vite's build doesn't type-check by default).
 
-1. Add `tsconfig.json` with `"strict": true` from the start — this codebase is small enough to go strict immediately rather than loosening and tightening later.
-2. Rename files `.js`/`.jsx` → `.ts`/`.tsx` incrementally, leaf-first: `board-utils.js` → `engine/board.ts` first (pure functions, no React, easiest win), then types, then components.
-3. Define a shared type model in `engine/types.ts` and reuse it everywhere instead of the current untyped object literals:
+1. Add `tsconfig.json` with `"strict": true` from the start — this codebase is small enough to go strict immediately rather than loosening and tightening later. (`noUncheckedIndexedAccess` was deliberately left off: the grid-access code indexes `board[x][y]` pervasively behind bounds checks the compiler can't see through, and turning it on would mean sprinkling non-null assertions everywhere for little real benefit on a codebase this size — worth reconsidering once `logic.ts` has real tests backing it.)
+2. Physically split the tree along the `engine/` vs `games/minesweeper/` line described above, converting to `.ts`/`.tsx` as part of the same move rather than as a second pass:
+   - `engine/types.ts` — only the genuinely generic pieces: `Position`, `Board<T>`.
+   - `engine/grid.ts` — `getNeighbors<T extends Position>()`, generalized from the old `adjacentNodes` (was only ever called internally, so the rename was free).
+   - `engine/class-names.ts` — the old `rjs-directives.js`'s `rjsClass`, renamed `classNames`. Converting it to TypeScript forced a real fix: every call site already passes evaluated booleans, never strings, so `eval()` was doing nothing except tripping the bundler's eval warning and failing to typecheck (`eval` wants a `string`, callers pass `boolean`) — removed.
+   - `games/minesweeper/types.ts` — `Cell`, `MinesweeperBoard`, `GameStatus`, `GameState`. These are *not* in `engine/` despite the plan above: `GameStatus`'s values are this game's own vocabulary (`'new' | 'success' | 'failed'`, matching the reducer's actual current output), and a future game will have its own status shape, not this one.
+   - `games/minesweeper/{logic,actions,reducer}.ts`, `games/minesweeper/components/*.tsx`, `app/{App,Header,Footer}.tsx`.
+   - Deleted outright rather than converted: `about.js`, `nomatch.js`, `layout.js` (all unreachable once Phase 2 removed the router — `layout.js` additionally imported two files that never existed), and `store/store.js` (`configureStore` was never called anywhere; `index.jsx` always built its own store directly).
+3. Type component props explicitly (no more implicit `any` from `this.props.whatever`). This surfaced two real, pre-existing bugs, both fixed as a condition of the code typechecking at all rather than deferred:
+   - `processMineBlockAction` discards blocks when `nodes.length === 0` via a bare `return;` instead of `return gameBlocks;` — `undefined` can't satisfy a `MinesweeperBoard` return type, and the caller spreads the result (`[...processBlockAction(...)]`), so this was a `TypeError: undefined is not iterable` waiting to happen on a specific flood-fill shape, not just a style nit.
+   - `actions.ts` exported action-type string constants (`CREATE_NEW_GAME`, etc.) and action-creator functions off the *same* object; `bindActionCreators` won't accept that shape (its type requires every property to be a function), and the switch in `reducer.ts` couldn't narrow on non-`const` string cases either. Split into `GameActionType` (an `as const` object of literals) and `gameActions` (just the creators) — both problems were really one typing issue.
 
-```ts
-export interface Position {
-  x: number;
-  y: number;
-}
-
-export interface Cell extends Position {
-  key: number;
-  isMine: boolean;
-  visited: boolean;
-  flagged: boolean;      // new: supports right-click flagging, a common Minesweeper feature that's currently missing
-  adjacentMines: number; // renamed from `count` for clarity
-}
-
-export type Board = Cell[][];
-
-export type GameStatus = 'idle' | 'in-progress' | 'success' | 'failed';
-
-export interface Difficulty {
-  name: string;
-  size: number;
-  mineCount: number;
-}
-
-export interface GameState {
-  board: Board;
-  status: GameStatus;
-  score: number;
-  difficulty: Difficulty;
-}
-```
-
-These types belong in `engine/` (not `games/minesweeper/`) specifically so the next tile-based game (e.g. a matching/memory game, a Lights Out clone) can reuse `Position`, `Board`, `GameStatus` without copy-pasting.
-
-4. Type component props explicitly (no more implicit `any` from `this.props.whatever`); this also surfaces real bugs, e.g. `Block`'s `count` prop currently has no type and silently allows the `count == 0 ? '' : count` loose-equality check to paper over `undefined`.
+`Difficulty` (board size / mine count presets) is deferred to whichever phase actually implements difficulty levels, rather than added now with no code using it — same reasoning for not adding a `flagged` field to `Cell` ahead of a flagging feature actually existing.
 
 ## Phase 4 — State management: Redux → hooks + Context
 
@@ -159,10 +133,7 @@ games/minesweeper/
    - `GameBoard.componentWillReceiveProps` (watching `isMineStruck`/`gameState` to open the modal) → derive `showModal` directly from `state.status` instead of mirroring it into local component state at all; this removes an entire class of "stale prop vs state" bugs.
    - `Counter`'s manual `TimerMixin.setInterval`/`clearInterval` bookkeeping → a small `useCountdown(seconds)` hook in `engine/` using `useEffect` + `useRef` for the interval handle. Delete `react-timer-mixin`.
 3. **Fix the unstable list keys** in the board render — use the existing stable `cell.key` (or `${x}-${y}`) instead of `index + yIndex++`.
-4. **Replace `rjsClass()`/`eval()`** with `clsx` (tiny, no eval, well-typed):
-   ```ts
-   clsx(cell.visited ? 'inactive' : 'active')
-   ```
+4. **Optionally swap `engine/class-names.ts`'s hand-rolled `classNames()` for `clsx`** — the `eval()` hazard this item originally targeted was already removed in Phase 3 (the helper never needed `eval` in the first place; see its implementation note), so this is just a minor ergonomics upgrade (variadic args, array/conditional shorthand) rather than a fix.
 5. **Accessibility**: the board is a grid of clickable `div`s with no keyboard access or ARIA semantics today. Model it on the [ARIA grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/) — `role="grid"`/`role="row"`/`role="gridcell"`, arrow-key navigation, `aria-label` per cell (e.g. "Row 3, Column 4, hidden" / "revealed, 2 adjacent mines"), and real `<button>` elements instead of `div onClick` so screen readers and keyboard-only users can actually play.
 6. **Performance**: wrap `Block`/`Cell` in `React.memo` once props are properly typed, so a single cell reveal doesn't re-render all 81+ cells. Memoize derived board-wide computations (e.g. win-check) with `useMemo`.
 7. **Linting/formatting**: add ESLint (flat config, `eslint-plugin-react-hooks`, `@typescript-eslint`) + Prettier, and fix the real bug flagged in Phase 0 (`processGameState(state.blocks)` using stale state) as part of this pass rather than carrying it forward typed.

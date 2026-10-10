@@ -1,33 +1,37 @@
 import React from 'react';
-import { bindActionCreators } from 'redux';
-import { connect } from 'react-redux';
-import { gameActions } from '../action/actions';
-import { rjsClass } from '../util/rjs-directives';
+import { bindActionCreators, type Dispatch } from 'redux';
+import { connect, type ConnectedProps } from 'react-redux';
+import { gameActions } from '../games/minesweeper/actions';
+import { classNames } from '../engine/class-names';
 
-function mapStateToProps(store) {
-  return {};
+function mapDispatchToProps(dispatch: Dispatch) {
+  return { actions: bindActionCreators(gameActions, dispatch) };
 }
 
-function mapDispatchToProps(dispatch) {
-  return { actions: bindActionCreators(gameActions, dispatch) };
+const connector = connect(null, mapDispatchToProps);
+
+type HeaderProps = ConnectedProps<typeof connector>;
+
+interface HeaderState {
+  dropdownOpen: boolean;
 }
 
 // Plain Bootstrap-3-classed markup standing in for react-bootstrap's
 // <Navbar>/<NavDropdown>, which crash under React 19 (legacy string refs /
 // removed childContextTypes API). Replaced wholesale by Phase 6's Tailwind
 // nav rather than upgrading this to react-bootstrap v2.
-class Header extends React.Component {
-  constructor(props) {
+class Header extends React.Component<HeaderProps, HeaderState> {
+  constructor(props: HeaderProps) {
     super(props);
     this.state = { dropdownOpen: false };
   }
 
-  toggleDropdown(e) {
+  toggleDropdown(e: React.MouseEvent) {
     e.preventDefault();
     this.setState({ dropdownOpen: !this.state.dropdownOpen });
   }
 
-  playAgain(e) {
+  playAgain(e: React.MouseEvent) {
     e.preventDefault();
     this.setState({ dropdownOpen: false });
     this.props.actions.createNewGame();
@@ -42,7 +46,7 @@ class Header extends React.Component {
               <a className="navbar-brand" href="#">MineSweeper</a>
             </div>
             <ul className="nav navbar-nav">
-              <li className={rjsClass({ dropdown: true, open: this.state.dropdownOpen })}>
+              <li className={classNames({ dropdown: true, open: this.state.dropdownOpen })}>
                 <a className="dropdown-toggle" href="#" role="button" onClick={this.toggleDropdown.bind(this)}>
                   Game <span className="caret"></span>
                 </a>
@@ -58,4 +62,4 @@ class Header extends React.Component {
   }
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(Header);
+export default connector(Header);

@@ -1,12 +1,12 @@
 import React from 'react';
-import { bindActionCreators } from 'redux';
-import { connect } from 'react-redux';
-import { gameActions } from '../action/actions'
-import Block from './block';
-import Counter from '../util/counter';
-import { rjsClass } from '../util/rjs-directives';
+import { bindActionCreators, type Dispatch } from 'redux';
+import { connect, type ConnectedProps } from 'react-redux';
+import { gameActions } from '../actions';
+import Block from './Block';
+import { classNames } from '../../../engine/class-names';
+import type { Cell, GameState } from '../types';
 
-function mapStateToProps(store) {
+function mapStateToProps(store: GameState) {
   return {
     blocks: store.blocks,
     score: store.score,
@@ -15,13 +15,21 @@ function mapStateToProps(store) {
   };
 }
 
-function mapDispatchToProps(dispatch) {
+function mapDispatchToProps(dispatch: Dispatch) {
   return { actions: bindActionCreators(gameActions, dispatch) };
 }
 
-class GameBoard extends React.Component {
+const connector = connect(mapStateToProps, mapDispatchToProps);
 
-  constructor(props) {
+type GameBoardProps = ConnectedProps<typeof connector>;
+
+interface GameBoardState {
+  showModal: boolean;
+}
+
+class GameBoard extends React.Component<GameBoardProps, GameBoardState> {
+
+  constructor(props: GameBoardProps) {
     super(props);
     this.state = { showModal: false };
   }
@@ -30,13 +38,7 @@ class GameBoard extends React.Component {
     this.props.actions.createNewGame();
   }
 
-  componentWillUpdate(nextProps, nextState) {
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-  }
-
-  componentWillReceiveProps(nextProps) {
+  componentWillReceiveProps(nextProps: GameBoardProps) {
 
     if (nextProps.isMineStruck || nextProps.gameState === 'success') {
       this.open();
@@ -51,7 +53,7 @@ class GameBoard extends React.Component {
     this.setState({ showModal: true });
   }
 
-  processAction(block) {
+  processAction(block: Cell) {
 
     if (!block.visited) {
       if (block.isMine) {
@@ -70,11 +72,11 @@ class GameBoard extends React.Component {
 
   getBlocks() {
 
-    let mappedBlocks = [], yblocks;
+    let mappedBlocks: React.ReactElement[] = [];
     let yIndex = 0;
     this.props.blocks.forEach((xblocks, index) => {
 
-      yblocks = xblocks.map((block) => {
+      const yblocks = xblocks.map((block) => {
 
         return (<Block key={index + yIndex++} onClick={this.processAction.bind(this, block)} isMine={block.isMine} visited={block.visited} x={block.x} y={block.y} count={block.count} />)
       });
@@ -89,7 +91,7 @@ class GameBoard extends React.Component {
   // <Modal>, which crashes under React 19 (legacy string refs / removed
   // childContextTypes API). Replaced wholesale by Phase 6's Tailwind/Radix
   // dialog rather than upgrading this to react-bootstrap v2.
-  onBackdropClick(e) {
+  onBackdropClick(e: React.MouseEvent<HTMLDivElement>) {
     if (e.target === e.currentTarget) {
       this.close();
     }
@@ -103,7 +105,7 @@ class GameBoard extends React.Component {
         <div className="board"> {this.getBlocks()} </div>
 
         {this.state.showModal &&
-          <div className="modal in" style={{ display: 'block' }} tabIndex="-1" role="dialog" onClick={this.onBackdropClick.bind(this)}>
+          <div className="modal in" style={{ display: 'block' }} tabIndex={-1} role="dialog" onClick={this.onBackdropClick.bind(this)}>
             <div className="modal-dialog" role="document">
               <div className="modal-content">
                 <div className="modal-header">
@@ -113,12 +115,12 @@ class GameBoard extends React.Component {
                   <h4 className="modal-title">MineSweeper</h4>
                 </div>
                 <div className="modal-body">
-                  <div className={rjsClass({ 'hidden': this.props.gameState !== 'success' })}>
+                  <div className={classNames({ hidden: this.props.gameState !== 'success' })}>
                     <h4>Congratulations!!!</h4>
                     <p>You successfully avoided all mines.</p>
                     <p><a href="#" onClick={this.playAgain.bind(this)} >Play again?</a></p>
                   </div>
-                  <div className={rjsClass({ 'hidden': this.props.gameState !== 'failed' })}>
+                  <div className={classNames({ hidden: this.props.gameState !== 'failed' })}>
                     <h4>Oooops!!</h4>
                     <p>You accidentally clicked on a mine.</p>
                     <p><a href="#" onClick={this.playAgain.bind(this)} >Play again?</a></p>
@@ -137,4 +139,4 @@ class GameBoard extends React.Component {
   }
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(GameBoard);
+export default connector(GameBoard);
