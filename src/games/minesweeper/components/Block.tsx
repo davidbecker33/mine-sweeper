@@ -56,13 +56,18 @@ function Block({ block, focused, onActivate, onNavigate, registerRef }: BlockPro
       data-state={block.visited ? 'revealed' : 'hidden'}
       data-mine={block.isMine || undefined}
       className={cn(
-        'flex size-8 items-center justify-center border text-sm font-bold select-none',
+        // w-(--cell-size)/h-(--cell-size) read the CSS custom property set
+        // by GameBoard's grid wrapper (Tailwind v4's var()-reference
+        // syntax), so cell size stays in sync with the grid's own fluid
+        // sizing instead of a fixed size duplicated in two places.
+        'flex w-(--cell-size) h-(--cell-size) items-center justify-center border font-bold select-none',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
         block.visited
           ? 'border-border/60 bg-background'
           : 'border-border bg-muted shadow-[inset_1px_1px_0_var(--color-background),inset_-1px_-1px_0_rgba(0,0,0,0.15)] hover:brightness-95 active:translate-y-px',
         block.visited && block.isMine && 'bg-destructive/15'
       )}
+      style={{ fontSize: 'calc(var(--cell-size) * 0.42)' }}
       // Pops in once, right when this cell flips from hidden to revealed --
       // Block only re-renders when `block` (or `focused`) actually changes
       // (React.memo; see the implementation note above), so this keyframe
@@ -72,7 +77,12 @@ function Block({ block, focused, onActivate, onNavigate, registerRef }: BlockPro
       onClick={() => onActivate(block)}
       onKeyDown={(e) => onNavigate(e, block)}
     >
-      {block.visited && block.isMine && <BombIcon className="size-4 text-destructive" />}
+      {block.visited && block.isMine && (
+        <BombIcon
+          className="text-destructive"
+          style={{ width: 'calc(var(--cell-size) * 0.48)', height: 'calc(var(--cell-size) * 0.48)' }}
+        />
+      )}
       {block.visited && !block.isMine && block.count > 0 && (
         <span className={COUNT_COLOR[block.count]}>{block.count}</span>
       )}

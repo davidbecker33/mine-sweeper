@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import useSound from 'use-sound';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -13,6 +13,10 @@ import loseSoundUrl from '../sounds/lose.wav';
 function cellKey(x: number, y: number): string {
   return `${x}-${y}`;
 }
+
+// React's CSSProperties type doesn't know about custom properties -- this
+// just widens it enough to set --cell-size without an inline `as any`.
+type BoardStyle = CSSProperties & { '--cell-size'?: string };
 
 export default function GameBoard() {
   const { state, dispatch } = useGame();
@@ -128,29 +132,45 @@ export default function GameBoard() {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div
-        className="grid gap-0.5 rounded-md bg-border p-0.5 shadow-sm"
-        style={{ gridTemplateColumns: `repeat(${width}, calc(var(--spacing) * 8))` }}
-        role="grid"
-        aria-label="Minesweeper board"
-      >
-        {blocks.map((row, x) => (
-          // display: contents (Tailwind's `contents`) keeps role="row" in
-          // the accessibility tree without taking this div out of the CSS
-          // grid above -- its <Block> children participate directly.
-          <div className="contents" role="row" key={x}>
-            {row.map((block, y) => (
-              <Block
-                key={block.key}
-                block={block}
-                focused={focusedPosition.x === x && focusedPosition.y === y}
-                onActivate={handleActivate}
-                onNavigate={handleNavigate}
-                registerRef={registerCellRef}
-              />
-            ))}
-          </div>
-        ))}
+      <div className="rounded-xl border border-border bg-card p-3 shadow-sm sm:p-5">
+        <div
+          className="grid gap-0.5 rounded-md bg-border p-0.5"
+          style={
+            {
+              // Fluid per-cell size instead of a size fixed at every
+              // viewport: scales from a narrow-phone-safe floor up to a
+              // larger desktop ceiling, inherited by each Block below via
+              // the w-(--cell-size)/h-(--cell-size) utilities. A 9-column
+              // board can't actually reach the 44px touch-target guideline
+              // on a 360-390px phone (9 * 44px alone exceeds the viewport
+              // before any chrome) -- see the Phase 8b note in the
+              // modernization plan for the arithmetic and why that's a
+              // board-size/difficulty decision, not a layout one.
+              '--cell-size': 'clamp(1.8rem, (100vw - 4.5rem) / 9, 3.25rem)',
+              gridTemplateColumns: `repeat(${width}, var(--cell-size))`
+            } as BoardStyle
+          }
+          role="grid"
+          aria-label="Minesweeper board"
+        >
+          {blocks.map((row, x) => (
+            // display: contents (Tailwind's `contents`) keeps role="row" in
+            // the accessibility tree without taking this div out of the CSS
+            // grid above -- its <Block> children participate directly.
+            <div className="contents" role="row" key={x}>
+              {row.map((block, y) => (
+                <Block
+                  key={block.key}
+                  block={block}
+                  focused={focusedPosition.x === x && focusedPosition.y === y}
+                  onActivate={handleActivate}
+                  onNavigate={handleNavigate}
+                  registerRef={registerCellRef}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
 
       <Dialog open={showModal} onOpenChange={(open) => !open && close()}>
